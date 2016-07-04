@@ -1,0 +1,92 @@
+
+
+purchases <- read.csv( '/Users/Valchel/Documents/Springboard/Data Wrangling/Exercises/refine_original.csv', 
+                       stringsAsFactors = FALSE)
+
+library(dplyr)
+library(tidyr)
+
+names(purchases)
+str(purchases)
+
+
+### STEP1. Standardize. Clean-up brand names to philips, akzo, van houten and unilever 
+
+# Update "company" column observations to be all lowercase 
+purchases$company <- tolower(purchases$company)
+purchases
+
+arrange(purchases, company)
+
+# Create a function using gsub() to match for words that end with "ps", start with "uni", start with "ak".
+# This corrects matched words to philips, akzo and unilever. Note: Table inspection shows all "van houten" 
+# variable are correctly spelled. 
+
+clean_companynames <- function(v1) { 
+  v2 <- gsub(pattern = ".*ps$", replacement = "philips", v1)
+  v3 <- gsub(pattern = "^uni.*", replacement = "unilever", v2)
+  v4 <- gsub(pattern = "^ak.*", replacement = "akzo", v3)
+  return(v4)
+}
+
+purchases$company <- clean_companynames(purchases$company)
+purchases
+
+
+
+### STEP2. Separate product code and number.
+
+# First, update column name to remove invalid "..." (ie. product.code...number -> product)
+colnames(purchases)[2] <- "product"
+
+# Separate product col into two new cols: product_code, product_number. 
+purchases <- separate(purchases, product, c("product_code", "product_number"), sep = "-")
+
+
+
+### STEP3. Add product categories.
+
+# Since product_category values depends on product_code, create a factor based on the product_code vector
+factor_product_code <- factor(purchases$product_code)
+
+# Levels assigns the corresponding product_category for these factors (p,v,x,q)
+# such that: p = Smartphone, v = TV, x = Laptop, q = Tablet
+# The resulting vector lists the product_category for a product_code
+levels(factor_product_code) <- c("Smartphone", "Tablet", "TV", "Laptop")
+factor_product_code
+
+# Mutate product_category to reflect it back into data frame
+purchases <- mutate(purchases, product_category = factor_product_code)
+
+
+
+### STEP4. Add full address for geocoding.
+
+# Mutate full_address col that concatenates address, city and country.  Separated by commas.
+purchases <- unite(purchases, full_address, address, city, country, sep = ",")
+
+
+
+### STEP5: Create dummy variables for company and product category. Necessary for further analysis. 
+
+##5A
+# For each company, specify equality conditon to evaluate TRUE/FALSE
+# Coerce resulting vector to numeric for binary values
+# Transfer binary vector into data frame respectively:
+# 4 (new) binary cols: company_akzo, company_philips, company_unilever, company_van_houten
+
+purchases$company_akzo <- as.numeric(purchases$company == "akzo")
+purchases$company_philips <- as.numeric(purchases$company == "philips")
+purchases$company_unilever <- as.numeric(purchases$company == "unilever")
+purchases$company_van_houten <- as.numeric(purchases$company == "van houten")
+
+purchases 
+
+##5B
+# Similar procedure as 5A. 
+# 4 (new) binary cols from product_category: product_smartphone, product_tv, product_laptop, product_tablet
+
+purchases$product_smartphone <- as.numeric(purchases$product_category == "Smartphone")
+purchases$product_tv <- as.numeric(purchases$product_category == "TV")
+purchases$product_laptop <- as.numeric(purchases$product_category == "Laptop")
+purchases$product_tablet <- as.numeric(purchases$product_category == "Tablet")
