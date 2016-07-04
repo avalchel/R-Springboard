@@ -1,0 +1,62 @@
+
+
+titanic <- read.csv('/Users/Valchel/Documents/Springboard/Data Wrangling/Exercises/titanic_original.csv')
+names(titanic)
+
+
+### TASK1: Port of embarkation. 
+## Finding and replacing empty strings.
+
+# Find missing values in embarked col. Replace missing values (blank or empty string) with "S"
+titanic$embarked <- str_replace(titanic$embarked, "^$", "S")
+# Extra check for missing rows (TRUE -> non-empty row)
+titanic_embarked <- complete.cases(titanic$embarked)
+
+
+
+### TASK2: Age. 
+## Calculate mean of age col to use as value for missing values. 
+
+# Subset titanic$age data so that only complete cases are kept
+clean_age <- na.omit(titanic$age)
+# Calculate mean of clean_age vector. 
+# ANSWER: 29.88
+mean_age <- mean(clean_age) 
+# Convert mean_age to character class to match titanic$age class
+mean_age <- as.character(mean_age)
+# Use mean_age as substitute for missing age and NA values
+titanic$age[is.na(titanic$age)] <- mean_age
+# Check that there is no "NA" values in titanic$age. 
+sum(complete.cases(titanic$age)) #All 1310 variables TRUE!
+
+# Calculate median of cleaned age col. ANSWER: 28
+median(clean_age) 
+# Plot age distribution. ANSWER: Mode is a better "guess" for missing age values given distribution spread. 
+hist(as.numeric(titanic$age))
+
+
+
+### TASK3: Lifeboat
+# Interested in looking at the distribution of passengers in different lifeboats.
+# Problem: lots of missing values in boat col.
+# Replace empty values in boat col with "NA"
+titanic$boat <- str_replace(titanic$boat, "^$", NA)
+
+
+
+### TASK4: Cabin
+# "You notice that many passengers don’t have a cabin number associated with them."
+# (1) Does it make sense to fill missing cabin numbers with a value?
+# ANSWER: No. Filling in a set value for missing cabin numbers would not make a difference. 
+# (2) What does a missing value here mean?
+# ANSWER: passenger did not survive for questioning, pssg was not supposed to board ship
+
+# "You have a hunch that the fact that the cabin number is missing might be a useful indicator of survival."
+# Create a new binary col (cabin_number) where 1 indicates that there is a cabin number, and 0 otherwise.
+
+titanic$cabin_number <- as.numeric(titanic$cabin != "")
+
+
+### Write titanic_clean.csv file 
+
+write.csv(titanic, "titanic_clean.csv")
